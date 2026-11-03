@@ -68,6 +68,17 @@ def convertir(ingredients, table):
     return resultat
 
 
+
+
+
+
+
+
+
+
+
+
+# PAGE
 # ---- Le programme -------------------------------------------------------------
 
 # Les valeurs viennent de la ligne de commande
