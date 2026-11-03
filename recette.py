@@ -3,6 +3,7 @@
 import argparse
 import csv
 from pathlib import Path
+import subprocess
 
 # ---- Les données -------------------------------------------------------------
 
@@ -68,6 +69,32 @@ def convertir(ingredients, table):
     return resultat
 
 
+def tableau(ingredients):
+    rep = ["| Ingrédient | Quantité |\n", "|---|---|\n"]
+    for ingredient, quantite, unite in ingredients:
+        rep.append(f"| {ingredient} | {quantite} {unite} |\n")
+    return rep
+
+
+def ecrire_markdown(nom, quantite, unite, ingredients):
+    tableau_ingredients = tableau(ingredients)
+    with open((DONNEES / nom).with_suffix(".md"), "r", encoding="utf-8") as file:
+        recette = file.read()
+
+    texte = f"## Ingrédients pour {quantite} personnes, en unités {unite}\n\n{"".join(tableau_ingredients)}"
+    recette = recette.replace("## Ingrédients", texte)
+    with open((SORTIE / nom).with_suffix(".md"), "w", encoding="utf-8") as file:
+        file.write(recette)
+
+    return (SORTIE / nom).with_suffix(".md")
+
+
+def ecrire_page(markdown):
+    subprocess.run(["pandoc", markdown, "-o", markdown.with_suffix(".html"), "--standalone", "--css", RACINE / "style.css"])
+    return markdown.with_suffix(".html")
+
+
+
 # ---- Le programme -------------------------------------------------------------
 
 # Les valeurs viennent de la ligne de commande
@@ -75,6 +102,7 @@ analyseur = argparse.ArgumentParser(description="Les ingrédients d'une recette 
 analyseur.add_argument("nom", help="la recette : un fichier de recettes/, sans .csv")
 analyseur.add_argument("-p", "--personnes", type=int, default=4, help="nombre de personnes (défaut : 4)")
 analyseur.add_argument("-u", "--unites", choices=("SI", "US"), default="SI", help="système d'unités (défaut : SI)")
+analyseur.add_argument("--page", action="store_true")
 options = analyseur.parse_args()
 NOM = options.nom
 PERSONNES = options.personnes
@@ -96,3 +124,7 @@ SORTIE.mkdir(exist_ok=True)
 fichier = SORTIE / (NOM + "_" + str(PERSONNES) + "_" + UNITES + ".csv")
 ecrire_ingredients(fichier, ingredients)
 print("écrit :", fichier)
+
+if options.page:
+    markdown = ecrire_markdown(NOM, PERSONNES, UNITES, ingredients)
+    page = ecrire_page(markdown)
